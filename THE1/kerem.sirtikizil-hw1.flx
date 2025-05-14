@@ -1,0 +1,80 @@
+%{
+
+#include <stdio.h>
+	
+int line_count = 1; 
+int comment_depth = 0;
+
+%}
+	
+
+tIDENTIFIER [a-zA-Z][a-zA-Z0-9_]*
+tINTEGER [0-9]+
+tDATE [0-9][0-9]\.[0-9][0-9]\.[0-9]{4}
+tTIME [0-9][0-9]\.[0-9][0-9]
+tSTRING \"[^\"]*\"
+%x comment
+%x endless_str 
+
+%%
+\n {line_count++;}
+[ \t\r]+  {}
+"//".* {}
+"/*" {comment_depth++; BEGIN(comment);}
+<comment>"*/" {comment_depth--; if(comment_depth == 0){
+	BEGIN(INITIAL); 
+	}
+}
+<comment>"/*" {comment_depth++;}
+<comment>\n {line_count++;}
+<comment>. {}
+{tSTRING} {printf("%d_tSTRING_(%s)\n",line_count,yytext); int newLines = 0;
+	for(int i = 0; yytext[i] != '\0'; i++){
+		if(yytext[i] == '\n') {newLines++;}
+	}
+	line_count += newLines;	 
+}
+\" {printf("%d_tSTRING_(%s",line_count,yytext); BEGIN(endless_str);}
+<endless_str>. {printf("%s",yytext);}
+<endless_str>\n {
+	printf("\n");
+	line_count++;
+}
+<endless_str><<EOF>> {
+	printf(")\n");
+	BEGIN(INITIAL);
+}
+Meeting {printf("%d_tSTARTMEETING\n",line_count);}
+endMeeting {printf("%d_tENDMEETING\n",line_count);}
+subMeetings {printf("%d_tSTARTSUBMEETINGS\n",line_count);}
+endSubMeetings {printf("%d_tENDSUBMEETINGS\n",line_count);}
+meetingNumber {printf("%d_tMEETINGNUMBER\n",line_count);}
+description {printf("%d_tDESCRIPTION\n",line_count);}
+startDate {printf("%d_tSTARTDATE\n",line_count);}
+endDate {printf("%d_tENDDATE\n",line_count);}
+startTime {printf("%d_tSTARTTIME\n",line_count);}
+endTime {printf("%d_tENDTIME\n",line_count);}
+locations {printf("%d_tLOCATIONS\n",line_count);}
+isRecurring {printf("%d_tISRECURRING\n",line_count);}
+frequency {printf("%d_tFREQUENCY\n",line_count);}
+repetitionCount {printf("%d_tREPETITIONCOUNT\n",line_count);}
+daily {printf("%d_tDAILY\n",line_count);}
+weekly {printf("%d_tWEEKLY\n",line_count);}
+monthly {printf("%d_tMONTHLY\n",line_count);}
+yearly {printf("%d_tYEARLY\n",line_count);}
+yes {printf("%d_tYES\n",line_count);}
+no {printf("%d_tNO\n",line_count);}
+= {printf("%d_tASSIGN\n",line_count);}
+, {printf("%d_tCOMMA\n",line_count);}
+{tTIME} {printf("%d_tTIME_(%s)\n",line_count,yytext);}
+{tIDENTIFIER} {printf("%d_tIDENTIFIER_(%s)\n",line_count,yytext);}
+{tINTEGER} {printf("%d_tINTEGER_(%s)\n",line_count,yytext);}
+{tDATE} {printf("%d_tDATE_(%s)\n",line_count,yytext);}
+. {printf("%d_ILLEGAL_CHARACTER_(%s)\n",line_count,yytext);}
+%%
+
+int  main(void){
+	yylex();
+	return 0;
+}
+	
